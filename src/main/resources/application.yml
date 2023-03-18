@@ -4,16 +4,49 @@ server:
     context-path: /activiti-demo
 
 spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/activiti?useUnicode=true&characterEncoding=utf8&serverTimezone=GMT
-    username: root
-    password: 123456
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    type: com.zaxxer.hikari.HikariDataSource
-    hikari:
-      maximum-pool-size: 15
-      minimum-idle: 5
-      idle-timeout: 30000
+#  datasource:
+#    url: jdbc:mysql://localhost:3306/activiti?useUnicode=true&characterEncoding=utf8&serverTimezone=GMT
+#    username: root
+#    password: 123456
+#    driver-class-name: com.mysql.cj.jdbc.Driver
+#    type: com.zaxxer.hikari.HikariDataSource
+#    hikari:
+#      maximum-pool-size: 15
+#      minimum-idle: 5
+#      idle-timeout: 30000
+
+  shardingsphere:
+    props:
+      sql-show: true
+    mode:
+      type: Memory
+    datasource:
+      names: myds
+      myds:
+        url: jdbc:mysql://localhost:3306/activiti?useUnicode=true&characterEncoding=utf8&serverTimezone=GMT&allowPublicKeyRetrieval=true
+        username: root
+        password: 123456
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        type: com.zaxxer.hikari.HikariDataSource
+    rules:
+      sharding:
+        binding-tables:
+          - act_hi_procinst
+#        broadcast-tables: act_ru_identitylink,act_ru_task,act_ru_variable,act_ru_execution
+        # 配置 分片算法
+        sharding-algorithms:
+          act_hi_procinst_algorithm:
+            type: HASH_MOD
+            props:
+              sharding-count: '2'
+        tables:
+          act_hi_procinst:
+            actual-data-nodes: myds.act_hi_procinst_$->{0..1}
+            table-strategy:
+              standard:
+                sharding-algorithm-name: act_hi_procinst_algorithm
+                sharding-column: proc_inst_id_
+
 
   activiti:
     database-schema-update: true
